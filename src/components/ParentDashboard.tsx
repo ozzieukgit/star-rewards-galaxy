@@ -25,8 +25,8 @@ export const ParentDashboard = ({ user, family, onLogout }: ParentDashboardProps
   const [showRewards, setShowRewards] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications] = useState([
-    { id: '1', message: 'Emma completed all her chores!', type: 'success', time: '2 hours ago' },
-    { id: '2', message: 'Jake reached 50 stars milestone', type: 'achievement', time: '1 day ago' },
+    { id: '1', message: 'Emma completed all her chores!', type: 'success' as const, time: '2 hours ago' },
+    { id: '2', message: 'Jake reached 50 stars milestone', type: 'achievement' as const, time: '1 day ago' },
   ]);
 
   const addStarsToChild = (childId: string, stars: number, reason: string) => {
