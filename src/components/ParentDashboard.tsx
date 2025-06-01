@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,15 +11,18 @@ import { ChildCard } from '@/components/ChildCard';
 import { AddStarsModal } from '@/components/AddStarsModal';
 import { RewardsModal } from '@/components/RewardsModal';
 import { NotificationCenter } from '@/components/NotificationCenter';
+import { useFamily } from '@/hooks/useFamily';
+import { AuthUser } from '@/hooks/useAuth';
+import { Family } from '@/hooks/useFamily';
 
 interface ParentDashboardProps {
-  user: any;
-  family: any;
+  user: AuthUser;
+  family: Family;
   onLogout: () => void;
 }
 
-export const ParentDashboard = ({ user, family, onLogout }: ParentDashboardProps) => {
-  const [children, setChildren] = useState(family?.children || []);
+export const ParentDashboard = ({ user, family: initialFamily, onLogout }: ParentDashboardProps) => {
+  const { family, addStarsToChild, reloadFamily } = useFamily();
   const [selectedChild, setSelectedChild] = useState(null);
   const [showAddStars, setShowAddStars] = useState(false);
   const [showRewards, setShowRewards] = useState(false);
@@ -29,23 +32,24 @@ export const ParentDashboard = ({ user, family, onLogout }: ParentDashboardProps
     { id: '2', message: 'Jake reached 50 stars milestone', type: 'achievement' as const, time: '1 day ago' },
   ]);
 
-  const addStarsToChild = (childId: string, stars: number, reason: string) => {
-    setChildren(children.map(child => 
-      child.id === childId 
-        ? { 
-            ...child, 
-            stars: child.stars + stars,
-            monthlyStars: child.monthlyStars + stars,
-            lastActivity: { stars, reason, date: new Date().toISOString() }
-          }
-        : child
-    ));
+  // Use the family from hook if available, otherwise use the prop
+  const currentFamily = family || initialFamily;
+  const children = currentFamily?.children || [];
+
+  const handleAddStars = async (childId: string, stars: number, reason: string) => {
+    try {
+      await addStarsToChild(childId, stars, reason);
+      setShowAddStars(false);
+      setSelectedChild(null);
+    } catch (error) {
+      console.error('Failed to add stars:', error);
+    }
   };
 
-  const totalFamilyStars = children.reduce((total, child) => total + child.monthlyStars, 0);
+  const totalFamilyStars = children.reduce((total, child) => total + child.monthly_stars, 0);
   const activeChildren = children.length;
   const topPerformer = children.reduce((top, child) => 
-    child.monthlyStars > (top?.monthlyStars || 0) ? child : top, null);
+    child.monthly_stars > (top?.monthly_stars || 0) ? child : top, null);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-400 via-blue-500 to-indigo-600">
@@ -208,7 +212,7 @@ export const ParentDashboard = ({ user, family, onLogout }: ParentDashboardProps
           <AddStarsModal
             child={selectedChild}
             onClose={() => setShowAddStars(false)}
-            onAddStars={addStarsToChild}
+            onAddStars={handleAddStars}
           />
         )}
 

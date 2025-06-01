@@ -4,30 +4,27 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Star, Users, Plus, Trash2 } from 'lucide-react';
+import { useFamily } from '@/hooks/useFamily';
+import { useToast } from '@/hooks/use-toast';
 
 interface Child {
   id: string;
   name: string;
-  stars: number;
-  monthlyStars: number;
 }
 
-interface SetupFamilyProps {
-  onFamilyCreated: (family: any) => void;
-}
-
-export const SetupFamily = ({ onFamilyCreated }: SetupFamilyProps) => {
+export const SetupFamily = () => {
   const [familyName, setFamilyName] = useState('');
   const [children, setChildren] = useState<Child[]>([]);
   const [newChildName, setNewChildName] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
+  const { createFamily } = useFamily();
+  const { toast } = useToast();
 
   const addChild = () => {
     if (newChildName.trim()) {
       const newChild: Child = {
         id: Date.now().toString(),
-        name: newChildName.trim(),
-        stars: 0,
-        monthlyStars: 0
+        name: newChildName.trim()
       };
       setChildren([...children, newChild]);
       setNewChildName('');
@@ -38,14 +35,25 @@ export const SetupFamily = ({ onFamilyCreated }: SetupFamilyProps) => {
     setChildren(children.filter(child => child.id !== id));
   };
 
-  const createFamily = () => {
-    if (familyName.trim() && children.length > 0) {
-      const family = {
-        name: familyName,
-        children,
-        createdAt: new Date().toISOString()
-      };
-      onFamilyCreated(family);
+  const handleCreateFamily = async () => {
+    if (!familyName.trim() || children.length === 0) return;
+
+    setIsCreating(true);
+    try {
+      await createFamily(familyName, children);
+      toast({
+        title: "Family created!",
+        description: "Your star rewards system is ready to go!",
+      });
+    } catch (error) {
+      console.error('Error creating family:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create family. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -121,11 +129,11 @@ export const SetupFamily = ({ onFamilyCreated }: SetupFamilyProps) => {
           </div>
 
           <Button
-            onClick={createFamily}
-            disabled={!familyName.trim() || children.length === 0}
+            onClick={handleCreateFamily}
+            disabled={!familyName.trim() || children.length === 0 || isCreating}
             className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-lg py-6"
           >
-            Start Our Star Journey! ⭐
+            {isCreating ? 'Creating...' : 'Start Our Star Journey! ⭐'}
           </Button>
         </CardContent>
       </Card>
